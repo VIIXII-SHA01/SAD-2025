@@ -13,7 +13,6 @@
 <div class="w-full max-w-3xl bg-white shadow-2xl rounded-2xl p-8 mt-8 mb-8">
   <h1 class="text-3xl font-bold text-red-700 text-center mb-6">Student Dashboard</h1>
 
-  <!-- Student Registration Form -->
   <form id="studentForm" class="space-y-5">
     <div class="grid md:grid-cols-2 gap-4">
       <div>
@@ -96,7 +95,6 @@
   </form>
 </div>
 
-<!-- Card Display Container -->
 <div id="cardContainer" class="w-full max-w-3xl flex flex-wrap gap-6 justify-center mb-8"></div>
 
 <script>
@@ -116,11 +114,9 @@ form.addEventListener('submit', function(e) {
   const yearLevel = document.getElementById('yearLevel').value;
   const course = document.getElementById('course').value;
 
-  // Card wrapper
   const wrapper = document.createElement('div');
   wrapper.className = 'flex flex-col items-center space-y-2';
 
-  // Card (landscape)
   const card = document.createElement('div');
   card.className = 'bg-red-600 text-white rounded-xl p-6 w-96 h-52 flex justify-between items-center shadow-lg relative';
   card.id = `card-${lrn}`;
@@ -135,7 +131,6 @@ form.addEventListener('submit', function(e) {
   `;
   wrapper.appendChild(card);
 
-  // Download button outside card
   const downloadBtn = document.createElement('button');
   downloadBtn.className = 'bg-white text-red-600 py-1 px-4 rounded-lg font-semibold hover:bg-gray-100 transition';
   downloadBtn.textContent = 'Download Your Card';
@@ -143,22 +138,21 @@ form.addEventListener('submit', function(e) {
 
   cardContainer.appendChild(wrapper);
 
-  // Generate larger QR code
   new QRCode(document.getElementById(`qrcode-${lrn}`), {
-    text: `LRN: ${lrn}\nName: ${lastName}\nCourse: ${course}\nEmail: ${email}\nContact: ${contact}\nAge: ${age}\nGender: ${gender}\nYear Level: ${yearLevel}`,
-    width: 120,
-    height: 120,
+    text: `LRN: ${lrn}\nName: ${firstName} ${lastName}\nCourse: ${course}\nEmail: ${email}\nContact: ${contact}\nAge: ${age}\nGender: ${gender}\nYear Level: ${yearLevel}`,
+    width: 140,
+    height: 140,
     colorDark : "#000000",
     colorLight : "#ffffff",
     correctLevel : QRCode.CorrectLevel.H
   });
 
-  // Download card as PNG
+  //using cors for enhancements
   downloadBtn.addEventListener('click', () => {
-    html2canvas(card, { scale: 2 }).then(canvas => {
+    html2canvas(card, { scale: 2, useCORS: true, allowTaint: false }).then(canvas => {
       const link = document.createElement('a');
-      link.download = `${lastName}_card.png`;
-      link.href = canvas.toDataURL();
+      link.download = `${firstName}_${lastName}_card.png`;
+      link.href = canvas.toDataURL("image/png");
       link.click();
     });
   });
