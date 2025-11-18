@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Dashboard | Pacific Southbay College</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-red-100 via-white to-gray-100 min-h-screen flex flex-col items-center p-4">
+
+<div class="w-full max-w-3xl bg-white shadow-2xl rounded-2xl p-8 mt-8 mb-8">
+  <h1 class="text-3xl font-bold text-red-700 text-center mb-6">Student Dashboard</h1>
+
+  <!-- Student Registration Form -->
+  <form id="studentForm" class="space-y-5">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">LRN Number</label>
+        <input type="text" id="lrn" required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">First Name</label>
+        <input type="text" id="firstName" required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Last Name</label>
+      <input type="text" id="lastName" required
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Age</label>
+        <input type="number" id="age" required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Gender</label>
+        <select id="gender" required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none">
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Custom">Custom</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Contact Number</label>
+        <input type="text" id="contact" required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
+      <input type="email" id="email" required
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Year Level</label>
+        <select id="yearLevel" required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none">
+          <option value="">Select Year Level</option>
+          <option value="1st Year">1st Year</option>
+          <option value="2nd Year">2nd Year</option>
+          <option value="3rd Year">3rd Year</option>
+          <option value="4th Year">4th Year</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Course</label>
+        <select id="course" required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none">
+          <option value="">Select Course</option>
+          <option value="BS Computer Science">BS Computer Science</option>
+          <option value="BS Information Technology">BS Information Technology</option>
+          <option value="BS Engineering">BS Engineering</option>
+          <option value="BS Education">BS Education</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit"
+      class="w-full bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition shadow-md">
+      Submit
+    </button>
+  </form>
+</div>
+
+<!-- Card Display Container -->
+<div id="cardContainer" class="w-full max-w-3xl flex flex-wrap gap-6 justify-center mb-8"></div>
+
+<script>
+const form = document.getElementById('studentForm');
+const cardContainer = document.getElementById('cardContainer');
+
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const lrn = document.getElementById('lrn').value;
+  const firstName = document.getElementById('firstName').value;
+  const lastName = document.getElementById('lastName').value;
+  const age = document.getElementById('age').value;
+  const gender = document.getElementById('gender').value;
+  const contact = document.getElementById('contact').value;
+  const email = document.getElementById('email').value;
+  const yearLevel = document.getElementById('yearLevel').value;
+  const course = document.getElementById('course').value;
+
+  // Card wrapper
+  const wrapper = document.createElement('div');
+  wrapper.className = 'flex flex-col items-center space-y-2';
+
+  // Card (landscape)
+  const card = document.createElement('div');
+  card.className = 'bg-red-600 text-white rounded-xl p-6 w-96 h-52 flex justify-between items-center shadow-lg relative';
+  card.id = `card-${lrn}`;
+
+  card.innerHTML = `
+    <div class="flex flex-col justify-center ml-4 space-y-1">
+      <h2 class="text-xl font-bold">${firstName} ${lastName}</h2>
+      <p class="font-semibold">Course: ${course}</p>
+      <p class="font-semibold">LRN: ${lrn}</p>
+    </div>
+    <div id="qrcode-${lrn}" class="mr-4"></div>
+  `;
+  wrapper.appendChild(card);
+
+  // Download button outside card
+  const downloadBtn = document.createElement('button');
+  downloadBtn.className = 'bg-white text-red-600 py-1 px-4 rounded-lg font-semibold hover:bg-gray-100 transition';
+  downloadBtn.textContent = 'Download Your Card';
+  wrapper.appendChild(downloadBtn);
+
+  cardContainer.appendChild(wrapper);
+
+  // Generate larger QR code
+  new QRCode(document.getElementById(`qrcode-${lrn}`), {
+    text: `LRN: ${lrn}\nName: ${lastName}\nCourse: ${course}\nEmail: ${email}\nContact: ${contact}\nAge: ${age}\nGender: ${gender}\nYear Level: ${yearLevel}`,
+    width: 120,
+    height: 120,
+    colorDark : "#000000",
+    colorLight : "#ffffff",
+    correctLevel : QRCode.CorrectLevel.H
+  });
+
+  // Download card as PNG
+  downloadBtn.addEventListener('click', () => {
+    html2canvas(card, { scale: 2 }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `${lastName}_card.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  });
+
+  form.reset();
+});
+</script>
+
+</body>
+</html>
