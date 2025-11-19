@@ -10,7 +10,7 @@
 </head>
 <body class="bg-gradient-to-br from-red-100 via-white to-gray-100 min-h-screen flex flex-col items-center p-4">
 
-<div class="w-full max-w-3xl bg-white shadow-2xl rounded-2xl p-8 mt-8 mb-8">
+<div class="w-full max-w-3xl bg-[#F7E1E6] shadow-2xl rounded-2xl p-8 mt-8 mb-8">
   <h1 class="text-3xl font-bold text-red-700 text-center mb-6">Student Dashboard</h1>
 
   <form id="studentForm" class="space-y-5">
@@ -68,6 +68,8 @@
         <select id="yearLevel" required
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none">
           <option value="">Select Year Level</option>
+          <option value="Grade 11">Grade 11</option>
+          <option value="Grade 12">Grade 12</option>
           <option value="1st Year">1st Year</option>
           <option value="2nd Year">2nd Year</option>
           <option value="3rd Year">3rd Year</option>
@@ -80,10 +82,21 @@
         <select id="course" required
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none">
           <option value="">Select Course</option>
-          <option value="BS Computer Science">BS Computer Science</option>
-          <option value="BS Information Technology">BS Information Technology</option>
-          <option value="BS Engineering">BS Engineering</option>
-          <option value="BS Education">BS Education</option>
+          <option value="Accountancy, Business and Management (ABM)">Accountancy, Business and Management (ABM)</option>
+          <option value="Humanities and Social Sciences (HUMSS)">Humanities and Social Sciences (HUMSS)</option>
+           <option value="Sciences, Technology, Engineering, and Mathematics (STEM)">Sciences, Technology, Engineering, and Mathematics (STEM)</option>
+
+          <option value="BS Accountancy (BSA)">BS Accountacy (BSA) </option>
+          <option value="BS Management Accounting (BSMA)">BS Management Accounting (BSMA)</option>
+          <option value="BS Office Administration (BSOA)">BS Office Administration (BSOA)</option>
+          <option value="BS Tourism Management (BSTM)">BS Tourism Management (BSTM)</option>
+          <option value="BS Criminilogy (BSCrim)">BS Criminilogy (BSCrim)</option>
+          <option value="BS Social Work (BSSW)">BS Social Work (BSSW)</option>
+          <option value="Bachelor Physical Education (BPEd)">Bachelor Physical Education (BPEd)</option>
+          <option value="Bachelor Early Childhood Education (BECEd)">Bachelor Early Childhood Education (BECEd)</option>
+          
+
+
         </select>
       </div>
     </div>
@@ -95,7 +108,8 @@
   </form>
 </div>
 
-<div id="cardContainer" class="w-full max-w-3xl flex flex-wrap gap-6 justify-center mb-8"></div>
+<div id="cardContainer" class="w-full max-w-8xl w-96 h-52
+flex flex-wrap gap-6 justify-center mb-8"></div>
 
 <script>
 const form = document.getElementById('studentForm');
@@ -118,18 +132,21 @@ form.addEventListener('submit', function(e) {
   wrapper.className = 'flex flex-col items-center space-y-2';
 
   const card = document.createElement('div');
-  card.className = 'bg-red-600 text-white rounded-xl p-6 w-96 h-52 flex justify-between items-center shadow-lg relative';
-  card.id = `card-${lrn}`;
+card.className =
+  'bg-[#F2A0B2] text-black rounded-xl p-6 w-96 h-52 flex justify-between items-center shadow-lg relative';
+card.id = `card-${lrn}`;
 
-  card.innerHTML = `
-    <div class="flex flex-col justify-center ml-4 space-y-1">
-      <h2 class="text-xl font-bold">${firstName} ${lastName}</h2>
-      <p class="font-semibold">Course: ${course}</p>
-      <p class="font-semibold">LRN: ${lrn}</p>
-    </div>
-    <div id="qrcode-${lrn}" class="mr-4"></div>
-  `;
-  wrapper.appendChild(card);
+card.innerHTML = `
+  <div class="flex flex-col justify-center ml-4 space-y-1">
+    <div style='display: inline-start'><p style='font-weight: bold'>Pacific Southbay College, INC.</p></div>
+    <h2 class="text-xl">Name: ${firstName} ${lastName}</h2>
+    <p class="font-semibold">Course: ${course}</p>
+    <p class="font-semibold">LRN: ${lrn}</p>
+  </div>
+  <div id="qrcode-${lrn}" class="mr-4"></div>
+`;
+wrapper.appendChild(card);
+
 
   const downloadBtn = document.createElement('button');
   downloadBtn.className = 'bg-white text-red-600 py-1 px-4 rounded-lg font-semibold hover:bg-gray-100 transition';
