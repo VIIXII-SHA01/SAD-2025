@@ -27,10 +27,10 @@
 
       <!-- Buttons / Navigation -->
       <div class="flex flex-wrap justify-center gap-4">
-        <a href="login.html"> <button class="bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-red-700 transition">
+        <a href="login"> <button class="bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-red-700 transition">
           Login
         </button></a>
-       <a href="register.html">
+       <a href="register">
          <button class="bg-gray-200 text-red-700 px-6 py-3 rounded-xl shadow-lg hover:bg-gray-300 transition">
           Register
         </button>

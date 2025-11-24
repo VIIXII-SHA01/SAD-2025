@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -9,10 +10,17 @@
   </head>
 
   <body class="bg-gradient-to-br from-red-100 via-white to-gray-100 min-h-screen flex items-center justify-center p-4">
+   <?php if (isset($_SESSION['exception'])): ?>
+      <div class="fixed top-0 left-0 right-0 z-50 flex justify-center p-4">
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg w-full max-w-md text-center">
+              <?= $_SESSION['exception']; ?>
+          </div>
+      </div>
+  <?php endif; ?>
+
 
     <!-- Registration Card -->
     <div class="bg-[#F7E1E6] shadow-2xl rounded-2xl w-full max-w-lg p-8 fade-in">
-
       <!-- Logo Section -->
       <div class="flex flex-col items-center mb-6">
         <img src="logo.png" alt="Pacific Southbay College Logo" class="w-20 h-20 object-contain mb-3" />
@@ -23,7 +31,7 @@
       </div>
 
       <!-- Registration Form -->
-      <form id="registerForm" class="space-y-5">
+      <form id="registerForm" class="space-y-5" method="post" action="/SAD-2025/register">
         <div>
           <label for="fullname" class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
           <input type="text" id="fullname" name="fullname" required
@@ -54,7 +62,7 @@
           </div>
         </div>
 
-        <button type="submit"
+        <button type="submit" name="reg"
           class="w-full bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition shadow-md">
           Register
         </button>
@@ -63,14 +71,13 @@
       <!-- Login Redirect -->
       <p class="text-center text-sm text-gray-600 mt-6">
         Already have an account?
-        <a href="login.html" class="text-red-600 hover:underline font-medium">Login here</a>
+        <a href="login" class="text-red-600 hover:underline font-medium">Login here</a>
       </p>
     </div>
 
     <!-- Simple JS for Validation -->
     <script>
       document.getElementById('registerForm').addEventListener('submit', function (e) {
-        e.preventDefault();
         const name = document.getElementById('fullname').value.trim();
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
