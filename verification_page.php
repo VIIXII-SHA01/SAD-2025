@@ -10,6 +10,21 @@
 
   <body class="bg-gradient-to-br from-red-100 via-white to-gray-100 min-h-screen flex items-center justify-center p-4">
 
+  <!--Hnadles Exceptions-->
+    <?php if (!empty($_SESSION['failed'])): ?>
+  <div class="..."><?= htmlspecialchars($_SESSION['exception']) ?></div>
+  <?php unset($_SESSION['failed']); endif; ?>
+
+
+  <!--Handles mismatch coees-->
+      <?php if (!empty($_SESSION['invalid_code'])): ?>
+              <div class="fixed top-0 left-0 right-0 z-50 flex justify-center p-4">
+                  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg w-full max-w-md text-center">
+                      <?= $_SESSION['invalid_code']; ?>
+                  </div>
+              </div>
+      <?php endif; ?>
+
     <!-- Verification Card -->
     <div class="bg-[#F7E1E6] shadow-2xl rounded-2xl w-full max-w-lg p-8 fade-in">
 
@@ -23,7 +38,7 @@
       </div>
 
       <!-- Verification Form -->
-      <form id="verifyForm" class="space-y-5" method="post" action="/SAD-2025/verify-email">
+      <form id="verifyForm" class="space-y-5" method="post" action="/SAD-2025/verification">
         <p class="text-gray-700 text-center mb-2">
           Enter the verification code sent to your email to activate your account.
         </p>
@@ -40,12 +55,6 @@
           Verify Email
         </button>
       </form>
-
-      <!-- Resend / Login Links -->
-      <p class="text-center text-sm text-gray-600 mt-6">
-        Didn't receive the code?
-        <a href="/SAD-2025/resend-code" class="text-red-600 hover:underline font-medium">Resend Code</a>
-      </p>
 
       <p class="text-center text-sm text-gray-600 mt-2">
         Already verified?

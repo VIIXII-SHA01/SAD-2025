@@ -1,18 +1,236 @@
 <?php
-session_start();
-include('db.php');
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-header('Access-Control-Allow-Origin: http://localhost');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
+require 'db.php';
 require 'vendor/autoload.php';
 
-$uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-// Remove base folder (SAD-2025 or SAD-2025/)
+// Allow CORS for local dev (adjust for production)
+header('Access-Control-Allow-Origin: http://localhost');
+
+// Parse and normalize URI (remove base folder)
+$uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $uri = preg_replace('#^SAD-2025/?#', '', $uri);
 
-// Routing Rules and navigations
+// Helper: set a friendly exception and redirect to a path
+function fail_and_redirect(string $message, string $redirectPath = 'register')
+{
+    $_SESSION['exception'] = $message;
+    header("Location: {$redirectPath}");
+    exit;
+}
+
+// ---------------------------
+// POST HANDLERS (run BEFORE routing/includes)
+// ---------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Use the normalized $uri to decide handler
+    if ($uri === 'register') {
+        // REGISTER HANDLER
+        $full_name = trim($_POST['fullname'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $confirm_password = $_POST['confirm'] ?? '';
+
+        // Keep email in session for verification step
+        $_SESSION['email'] = $email;
+
+        // Basic validation
+        if ($password !== $confirm_password) {
+            fail_and_redirect('Passwords do not match.', 'register');
+        }
+        if (empty($full_name) || empty($email) || empty($password)) {
+            fail_and_redirect('Please fill in all fields.', 'register');
+        }
+
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $role = 'student';
+        $created_at = date('Y-m-d H:i:s');
+        $status = 'unverified';
+
+        // Start DB transaction
+        $conn->begin_transaction();
+        try {
+            // Insert user
+            $query = "INSERT INTO users (full_name, email, password, role, created_at, status)
+                      VALUES (?, ?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($query);
+            if (!$stmt) {
+                throw new Exception('Prepare failed: ' . $conn->error);
+            }
+            $stmt->bind_param('ssssss', $full_name, $email, $hashed_password, $role, $created_at, $status);
+
+            try {
+                $stmt->execute();
+            } catch (mysqli_sql_exception $e) {
+                // Duplicate entry? (MySQL error code 1062)
+                if ($e->getCode() === 1062) {
+                    $conn->rollback();
+                    fail_and_redirect('That email already exists.', 'register');
+                }
+                throw $e;
+            }
+
+            $user_id = $conn->insert_id;
+            $stmt->close();
+
+            // Generate OTP and insert into verification after email send
+            $otp = mt_rand(100000, 999999);
+
+            // Send email
+            $mail = new PHPMailer(true);
+            try {
+                // Configure these with your actual sender creds
+                $senderEmail = 'marketingj786@gmail.com';
+                $senderAppPassword = 'orxk bcjn eqdf nzsb'; // use app password stored securely in production
+
+                $mail->isSMTP();
+                $mail->Host = 'smtp.gmail.com';
+                $mail->SMTPAuth = true;
+                $mail->Username = $senderEmail;
+                $mail->Password = $senderAppPassword;
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                $mail->Port = 465;
+                $mail->CharSet = 'UTF-8';
+                $mail->SMTPOptions = [
+                    'ssl' => [
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    ]
+                ];
+
+                $mail->setFrom($senderEmail, 'Pacific Southbay College');
+                $mail->addAddress($email);
+                $mail->isHTML(true);
+                $mail->Subject = 'Verification Code';
+                $mail->Body = "
+                    <p>Your verification code is:</p>
+                    <h2 style='font-size:32px;letter-spacing:3px;margin:0;'>$otp</h2>
+                ";
+                $mail->AltBody = "Your verification code is: $otp";
+
+                if (!$mail->send()) {
+                    // If mail sending fails, rollback and inform user
+                    $conn->rollback();
+                    fail_and_redirect('Failed to send verification email. Please try again later.', 'register');
+                }
+            } catch (Exception $e) {
+                $conn->rollback();
+                fail_and_redirect('Failed to send verification email. Please try again later.', 'register');
+            }
+
+            // Insert verification record (only after email was successfully sent)
+            $query2 = "INSERT INTO verification (user_id, verification_code, created_at) VALUES (?, ?, NOW())";
+            $stmt2 = $conn->prepare($query2);
+            if (!$stmt2) {
+                throw new Exception('Prepare failed: ' . $conn->error);
+            }
+            // user_id is integer, otp as string
+            $stmt2->bind_param('is', $user_id, $otp);
+            $stmt2->execute();
+            $stmt2->close();
+
+            // Commit transaction
+            $conn->commit();
+
+            // Redirect to verification page (no output should have been sent yet)
+            header('Location: verification');
+            exit;
+
+        } catch (Exception $e) {
+            // Roll back on any exception, set friendly message and redirect
+            if ($conn->in_transaction) {
+                $conn->rollback();
+            }
+            // Log $e->getMessage() to a file in production instead of exposing
+            $_SESSION['exception'] = 'Registration failed. Please try again.';
+            header('Location: register');
+            exit;
+        }
+    }
+
+    if ($uri === 'verification') {
+        // VERIFICATION HANDLER
+        $user_email = $_SESSION['email'] ?? '';
+        $code = trim($_POST['verification_code'] ?? '');
+
+        if (empty($user_email)) {
+            fail_and_redirect('Session expired. Please register or login again.', 'register');
+        }
+
+        if (empty($code)) {
+            fail_and_redirect('Please enter the verification code.', 'verification');
+        }
+
+        $conn->begin_transaction();
+        try {
+            $query = "
+                SELECT v.verification_code
+                FROM verification v
+                INNER JOIN users u ON v.user_id = u.user_id
+                WHERE u.email = ?
+                ORDER BY v.created_at DESC
+                LIMIT 1
+            ";
+            $stmt = $conn->prepare($query);
+            if (!$stmt) {
+                throw new Exception('Prepare failed: ' . $conn->error);
+            }
+            $stmt->bind_param('s', $user_email);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $stmt->close();
+
+            if (!$row) {
+                $conn->rollback();
+                fail_and_redirect('Verification record not found. Please request a new code.', 'verification');
+            }
+
+            $otp = (string)$row['verification_code'];
+
+            // Compare numeric/string values loosely (user input is string)
+            if ($code == $otp) {
+                $update = "UPDATE users SET status = 'granted' WHERE email = ?";
+                $stmt2 = $conn->prepare($update);
+                if (!$stmt2) {
+                    throw new Exception('Prepare failed: ' . $conn->error);
+                }
+                $stmt2->bind_param('s', $user_email);
+                $stmt2->execute();
+                $stmt2->close();
+
+                $conn->commit();
+
+                // Optionally: delete used verification row or mark it consumed
+                header('Location: login');
+                exit;
+            } else {
+                $conn->rollback();
+                $_SESSION['invalid_code'] = 'Wrong code. Please try again.';
+                header('Location: verification');
+                exit;
+            }
+        } catch (Exception $e) {
+            if ($conn->in_transaction) {
+                $conn->rollback();
+            }
+            $_SESSION['failed'] = 'Verification failed. Please try again.';
+            header('Location: verification');
+            exit;
+        }
+    }
+}
+
+// ---------------------------
+// ROUTING — include pages (no output has been sent by this script above)
+// ---------------------------
 switch ($uri) {
     case 'library':
         require 'main-page.php';
@@ -23,105 +241,17 @@ switch ($uri) {
         break;
 
     case 'register':
+        // register.php should show any $_SESSION['exception'] or $_SESSION['invalid_code']
         require 'register.php';
         break;
 
     case 'verification':
+        // verification_page.php should also show messages from session
         require 'verification_page.php';
         break;
 
     default:
         http_response_code(404);
         echo "404 - Page not found";
+        break;
 }
-
-if($_SERVER['REQUEST_METHOD'] == 'POST' && $_SERVER['REQUEST_URI'] == '/SAD-2025/register') {
-    $full_name = $_POST['fullname'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $confirm_password = $_POST['confirm'] ?? '';
-    //if password not match
-    if($password !== $confirm_password) {
-        header('location: register');
-        exit;
-    }
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    $role = 'student';
-    $created_at = date('Y-m-d H:i:s');
-    $status = 'unverified';
-
-     $conn->begin_transaction();
-    try{
-    $query = "INSERT INTO users (full_name, email, password, role, created_at, status) VALUES(?,?,?,?,?,?)";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('ssssss', $full_name, $email, $hashed_password, $role, $created_at, $status);
-    if($stmt->execute()) {
-         $user_id = $conn->insert_id;
-         $mail = new PHPMailer(true);
-        try{
-           $sender = 'marketingj786@gmail.com';
-            $password = 'orxk bcjn eqdf nzsb';
-            $recipient = $email;
-            $subject = 'Verification';
-
-            // Generate OTP
-            $otp = mt_rand(100000, 900000);
-
-            // Create message with H2 size OTP
-            $message = "
-                <p>Your verification code is:</p>
-                <h2 style='font-size: 32px; letter-spacing: 3px;'>$otp</h2>
-            ";
-
-            // Configure PHPMailer
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $sender;
-            $mail->Password   = $password; 
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 465;
-            $mail->CharSet    = 'UTF-8';
-
-            $mail->setFrom($sender);
-            $mail->addAddress($recipient);
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
-            $mail->Body    = $message;
-            $mail->AltBody = "Your verification code is: $otp";
-
-            $mail->SMTPOptions = [
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ];
-
-            if($mail->send()) {
-                try{
-                    $query2 = "INSERT INTO verification (user_id, verification_code) VALUES (?,?)";
-                    $stmt = $conn->prepare($query2);
-                    $stmt->bind_param('ss',  $user_id, $otp);
-                    $stmt->execute();
-                    $conn->commit();
-                } catch(mysqli_sql_exception) {
-                  $_SESSION['exception'] = "Email is Already Existed!";
-                }
-            } else {
-                echo "<script>alert('Error Sending Email')</script>";
-            }
-           header('location: verification');
-           exit;
-        }catch(Exception $e) {
-            echo "<script>alert(error sending email)</script>";
-            $_SESSION['exception'] = "error sending email";
-        }
-    }
-         }   catch(mysqli_sql_exception) {
-            $conn->rollback();
-            echo"<script>alert(duplicate entry foe email $email)</script>";
-            $_SESSION['exception'] = "Duplicate entry foe email $email";
-        }
-}
-?>

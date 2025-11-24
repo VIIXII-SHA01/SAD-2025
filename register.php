@@ -10,13 +10,9 @@
   </head>
 
   <body class="bg-gradient-to-br from-red-100 via-white to-gray-100 min-h-screen flex items-center justify-center p-4">
-   <?php if (isset($_SESSION['exception'])): ?>
-      <div class="fixed top-0 left-0 right-0 z-50 flex justify-center p-4">
-          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg w-full max-w-md text-center">
-              <?= $_SESSION['exception']; ?>
-          </div>
-      </div>
-  <?php endif; ?>
+    <?php if (!empty($_SESSION['exception'])): ?>
+  <div class="..."><?= htmlspecialchars($_SESSION['exception']) ?></div>
+  <?php unset($_SESSION['exception']); endif; ?>
 
 
     <!-- Registration Card -->
