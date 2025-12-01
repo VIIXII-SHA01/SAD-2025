@@ -34,3 +34,25 @@
   .fade-in {
     animation: fadeIn 1.5s ease-in-out;
 }
+
+@keyframes fadePop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-fade {
+  animation: fadePop 0.25s ease-out;
+}
+
+ #toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #16a34a;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: none;
+    z-index: 9999;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  }
